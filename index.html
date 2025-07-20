@@ -5,8 +5,7 @@
   <title>Sony TEN 2 HD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dplayer@1.26.0/dist/DPlayer.min.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -16,45 +15,50 @@
       width: 100%;
       overflow: hidden;
     }
-    video {
+    #dplayer {
       width: 100%;
       height: 100%;
-      background: black;
     }
   </style>
 </head>
 <body>
-  <video id="player" playsinline controls autoplay></video>
+  <div id="dplayer"></div>
 
   <script>
-    const video = document.getElementById('player');
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource('https://tataplay.slivcdn.com/hls/live/2020591/TEN3HD/master_3500.m3u8');
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {
-          video.muted = true;
-          video.play();
-        });
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = 'https://tataplay.slivcdn.com/hls/live/2020591/TEN3HD/master_3500.m3u8';
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(() => {
-          video.muted = true;
-          video.play();
-        });
-      });
-    }
+    const dp = new DPlayer({
+      container: document.getElementById('dplayer'),
+      autoplay: true,
+      volume: 0.8,
+      video: {
+        url: 'https://tataplay.slivcdn.com/hls/live/2020591/TEN3HD/master_3500.m3u8',
+        type: 'hls'
+      }
+    });
 
-    const player = new Plyr(video);
-
-    // Attempt to unmute on interaction
-    ['click', 'touchstart', 'keydown'].forEach(evt =>
-      document.addEventListener(evt, () => {
+    // Force autoplay with sound (with fallback)
+    const tryAutoPlay = async () => {
+      const video = dp.video;
+      try {
         video.muted = false;
         video.volume = 0.8;
+        await video.play();
+      } catch {
+        try {
+          video.muted = true;
+          await video.play();
+          video.muted = false;
+        } catch {}
+      }
+    };
+
+    tryAutoPlay();
+
+    ['click', 'touchstart', 'keydown'].forEach(evt =>
+      document.addEventListener(evt, () => {
+        if (dp.video.muted) {
+          dp.video.muted = false;
+          dp.video.volume = 0.8;
+        }
       }, { once: true })
     );
   </script>
